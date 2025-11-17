@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -32,20 +30,6 @@ const fetchRelated = async (slug) => {
   return res.json();
 };
 
-const hasLocalAsset = (src) => {
-  if (!src || !src.startsWith("/")) {
-    return true;
-  }
-  try {
-    const normalized = src.startsWith("/") ? src.slice(1) : src;
-    const filePath = path.join(process.cwd(), "public", normalized);
-    return fs.existsSync(filePath);
-  } catch (error) {
-    console.warn("hasLocalAsset: fallback to placeholder", error);
-    return false;
-  }
-};
-
 export async function generateMetadata(props) {
   const params = await props?.params;
   const slug = params?.slug;
@@ -59,7 +43,12 @@ export async function generateMetadata(props) {
 
   const baseUrl = await getBaseUrl();
   const description = blog.content.replace(/<[^>]+>/g, " ").slice(0, 150);
-  const image = blog.coverImg ? new URL(blog.coverImg, baseUrl).toString() : undefined;
+  const isExternalCover = Boolean(blog.coverImg && /^(https?:)?\/\//i.test(blog.coverImg));
+  const image = blog.coverImg
+    ? isExternalCover
+      ? blog.coverImg
+      : new URL(blog.coverImg, baseUrl).toString()
+    : undefined;
   const canonical = new URL(`/blog/${blog.slug}`, baseUrl).toString();
 
   return {
@@ -88,9 +77,9 @@ export default async function BlogDetails(props) {
   const related = await fetchRelated(slug);
   const cover = blog.coverImg?.trim();
   const isExternalCover = Boolean(cover && /^(https?:)?\/\//i.test(cover));
-  const isRealCover = Boolean(cover) && hasLocalAsset(cover);
-  const imageSrc = isRealCover ? cover : "/placeholder.svg";
-  const isPlaceholder = !isRealCover;
+  const hasCover = Boolean(cover);
+  const imageSrc = hasCover ? cover : "/placeholder.svg";
+  const isPlaceholder = !hasCover;
   const baseUrl = await getBaseUrl();
   const canonical = `${baseUrl}/blog/${blog.slug}`;
   const jsonLd = {
@@ -108,7 +97,11 @@ export default async function BlogDetails(props) {
       "@type": "Organization",
       name: "Blogcode",
     },
-    image: isRealCover ? new URL(imageSrc, baseUrl).toString() : undefined,
+    image: hasCover
+      ? isExternalCover
+        ? imageSrc
+        : new URL(imageSrc, baseUrl).toString()
+      : undefined,
     description: blog.content.replace(/<[^>]+>/g, " ").slice(0, 160),
   };
 

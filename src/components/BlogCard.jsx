@@ -1,21 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
 import Link from "next/link";
 import Image from "next/image";
-
-const hasLocalAsset = (src) => {
-  if (!src || !src.startsWith("/")) {
-    return true;
-  }
-  try {
-    const normalized = src.startsWith("/") ? src.slice(1) : src;
-    const filePath = path.join(process.cwd(), "public", normalized);
-    return fs.existsSync(filePath);
-  } catch (error) {
-    console.warn("hasLocalAsset: fallback to placeholder", error);
-    return false;
-  }
-};
 
 const formatDate = (value) =>
   new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value));
@@ -31,14 +15,14 @@ const BlogCard = ({ blog }) => {
   if (!blog) return null;
   const rawCover = blog.coverImg?.trim();
   const isExternalCover = Boolean(rawCover && /^(https?:)?\/\//i.test(rawCover));
-  const isRealCover = Boolean(rawCover) && hasLocalAsset(rawCover);
-  const cover = isRealCover ? rawCover : "/placeholder.svg";
+  const hasCover = Boolean(rawCover);
+  const cover = hasCover ? rawCover : "/placeholder.svg";
 
   return (
     <article className="blog-card">
       <Link
         href={`/blog/${blog.slug}`}
-        className={`blog-card__image${isRealCover ? "" : " blog-card__image--placeholder"}`}
+        className={`blog-card__image${hasCover ? "" : " blog-card__image--placeholder"}`}
         aria-label={`Read ${blog.title}`}
       >
         <Image
@@ -50,7 +34,7 @@ const BlogCard = ({ blog }) => {
           style={{ objectFit: "cover" }}
           unoptimized={isExternalCover}
         />
-        {!isRealCover ? <span>Upload a custom cover to replace the default graphic.</span> : null}
+        {!hasCover ? <span>Upload a custom cover to replace the default graphic.</span> : null}
       </Link>
       <div className="blog-card__body">
         <div className="blog-card__meta">

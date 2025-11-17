@@ -198,7 +198,9 @@ const BlogForm = ({ initialData = null, mode = "create" }) => {
           Or upload an image
           <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFileChange} disabled={uploading} />
           <small>
-            {uploading ? "Uploading..." : "Only JPEG, PNG, or WebP files are accepted. Stored locally in /public/uploads."}
+            {uploading
+              ? "Uploading..."
+              : "Only JPEG, PNG, or WebP files are accepted. Images are hosted via ImgBB."}
           </small>
         </label>
       </div>
